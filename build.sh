@@ -11,12 +11,15 @@ if [ -z "$(docker buildx inspect | grep arm64)" ]; then
 		docker.io/multiarch/qemu-user-static --reset -p yes
 fi
 
+# ensure we got the repo
+git clone https://github.com/Interrupt/systemshock.git
+
 # build the image
 docker buildx build . --platform linux/arm64 -t systemshock &&
-
-# configure and build the binary
 docker run --rm --platform=linux/arm64 \
-	-v ./build:/root/systemshock \
+	-v ./scripts:/scripts \
+	-v ./gl4es:/src/gl4es \
+	-v ./systemshock:/src/systemshock \
 	--name systemshock \
 	systemshock
 
@@ -25,4 +28,8 @@ if [ $? != 0 ]; then
 	return
 fi
 
-ls -l build/outputs/
+# copy files out
+mkdir -pv sshock/ &&
+cp -v systemshock/systemshock sshock/sshock.aarch64 &&
+cp -rTv gl4es/lib sshock/libs.aarch64 &&
+echo "Files written to sshock/"

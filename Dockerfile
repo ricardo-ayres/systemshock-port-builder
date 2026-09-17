@@ -1,29 +1,28 @@
-FROM ubuntu:22.04
+#FROM ubuntu:22.04
+FROM ubuntu:19.10 AS builddeps
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+COPY <<EOF /etc/apt/sources.list
+deb http://old-releases.ubuntu.com/ubuntu/ eoan main restricted
+deb http://old-releases.ubuntu.com/ubuntu/ eoan-updates main restricted
+deb http://old-releases.ubuntu.com/ubuntu/ eoan universe
+deb http://old-releases.ubuntu.com/ubuntu/ eoan-updates universe
+EOF
+
 RUN <<EOF
 apt update
-apt install -y git build-essential cmake libsdl2-dev libsdl2-image-dev \
-	libsdl2-mixer-dev
+apt install -y git build-essential cmake \
+	libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev \
+	libgbm-dev
 EOF
 
-COPY --chmod=755 <<EOF /root/entrypoint.sh
-#!/bin/env bash
-cd /root/ &&
-git clone https://github.com/Interrupt/systemshock
+RUN useradd -u 1000 -U -m builder
+RUN mkdir /src
+RUN chown builder:builder /src
+RUN chmod 0755 /src
 
-cd /root/systemshock &&
-git pull &&
-cmake . \\
-	-DENABLE_OPENGL=OFF \\
-	-DENABLE_FLUIDSYNTH=OFF \\
-	-DENABLE_SDL2=ON &&
-make -j $(nproc) &&
-mkdir -p outputs/libs.aarch64
-cp -v systemshock outputs/sshock.aarch64
-cp -v /lib/aarch64-linux-gnu/libGLU.so.1 outputs/libs.aarch64/
-EOF
-
-# Run command
-CMD ["/root/entrypoint.sh"]
+FROM builddeps
+WORKDIR /src
+USER 1000:1000
+CMD ["/scripts/build-all.sh"]

@@ -1,2 +1,6 @@
-# Ignore the source code
-build
+# Ignore the source code trees
+gl4es
+systemshock
+
+# Ignore output directory
+sshock
